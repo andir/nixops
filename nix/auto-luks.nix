@@ -67,6 +67,24 @@ with utils;
               luksFormat</command>.
             '';
           };
+
+          mountPoint = mkOption {
+            default = false;
+            type = types.nullOr types.string;
+            description = ''
+              This option is required so the autoLuks module knows where the
+              device will be mounted at.  With this option we inject the
+              required <literal>_netdev</literal> mount option. Without the
+              mount option the <literal>local-fs.target</literal> would fail.
+
+              Set to the path used in the corresponding
+              <literal>fileSystem.<replaceable>path</replaceable></literal>
+              option or to <literal>null</literal> if you know what you are doing.
+
+              WARNING: failing to provide the correct value here might render
+              the system unbootable.
+            '';
+          };
         };
       });
       description = ''
@@ -85,6 +103,11 @@ with utils;
   ###### implementation
 
   config = {
+
+    fileSystem =
+      let
+        mkFileSystemEntry = _: attrs: nameValuePair attrs.mountPoint { options = [ "_netdev" ]; };
+      in map mkFileSystemEntry (filter (attrs: attrs.mountPoint != null) (attrValues config.deployment.autoLuks));
 
     systemd.services =
       let
