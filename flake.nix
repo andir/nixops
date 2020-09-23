@@ -69,6 +69,32 @@
       }) options;
     };
 
+    rstNixosOptions = let
+      oneRstOption = name: value: ''
+        # ${name}
+
+        ${value.description}
+
+        Type: ${value.type}
+
+        ${pkgs.lib.optionalString (value ? default) ''
+          Default:::
+            ${builtins.toJSON value.default}
+        ''}
+
+        ${pkgs.lib.optionalString (value ? readOnly) ''
+          Read Only
+        ''}
+
+        ${pkgs.lib.optionalString (value ? example) ''
+          Example:::
+            ${builtins.toJSON value.example}
+        ''}
+      '';
+      # Yeah, this doesn't work with regular flakes but they are experimental and make things waay harder then it should be.
+      text = pkgs.lib.concatStringsSep "\n" (pkgs.lib.mapAttrsToList oneRstOption self.nixosOptions.${builtins.currentSystem}.optionsNix);
+    in pkgs.writeText "options.rst" text;
+
     checks.doc = pkgs.stdenv.mkDerivation {
       name = "lint-docs";
       # we use cleanPythonSources because the default gitignore
